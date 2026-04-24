@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "mstack",
+  "description": "Maxime's opinionated Claude Code marketplace — workflow skills for shipping with agents",
+  "owner": {
+    "name": "Maxime"
+  },
+  "plugins": [
+    {
+      "name": "mstack",
+      "description": "Workflow skills: interview, spec, slice, TDD, and keep the codebase agent-friendly",
+      "version": "0.1.0",
+      "author": { "name": "Maxime" },
+      "source": "./plugins/mstack",
+      "category": "productivity"
+    }
+  ]
+}
