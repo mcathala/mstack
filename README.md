@@ -16,6 +16,7 @@ Workflow skills and commands for shipping with agents.
 |-------|-------------|
 | `sync` | Interview the user relentlessly about a plan until each branch of the design tree is resolved. |
 | `create-skill` | Scaffold a new agent skill with proper structure, progressive disclosure, and a strong description. |
+| `to-pdr` | _(placeholder — not yet implemented)_ |
 
 **Commands** (user-invoked via `/` prefix):
 
