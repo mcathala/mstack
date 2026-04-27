@@ -15,8 +15,16 @@ Workflow skills and commands for shipping with agents.
 | Skill | Description |
 |-------|-------------|
 | `sync` | Interview the user relentlessly about a plan until each branch of the design tree is resolved. |
+| `to-action` | Turn an aligned understanding (typically from `/sync`) into a PRD as a parent GitHub issue plus vertical-slice child issues an AI can pick up cold. |
 | `create-skill` | Scaffold a new agent skill with proper structure, progressive disclosure, and a strong description. |
-| `to-pdr` | _(placeholder — not yet implemented)_ |
+
+**Workflow:**
+
+```
+/sync         → discover and align (relentless interview)
+/to-action    → commit the plan (PRD issue + child issues)
+hand to AI    → child issues, one at a time
+```
 
 **Commands** (user-invoked via `/` prefix):
 
