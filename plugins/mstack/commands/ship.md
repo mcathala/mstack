@@ -18,7 +18,7 @@ Commit all current changes as **multiple small, reviewer-friendly commits**, pus
 ## Rules
 
 - **NEVER push to `master` or `staging`.** Non-negotiable.
-- **PRs always target `staging`.**
+- **PRs target `staging` when it exists on the remote, otherwise the repo's default branch.** If `staging` is missing, **ask before creating it** — never create it unilaterally.
 - **Prefer multiple small commits** over one large commit — each commit = one coherent intent. A reviewer should be able to understand each commit in isolation.
 - **Never use `git add -A`.** Stage exactly the paths belonging to the current commit group.
 - Branch names use **dashes (`-`)**, not slashes (`/`). Example: `fix-kobalt-my-feature-sc-1234`.
@@ -79,16 +79,34 @@ After the loop, `git status` must show a clean tree.
 
 ### 8. Create or update the PR
 
+**First, resolve the PR target branch (`BASE`):**
+
+```bash
+git ls-remote --heads origin staging | grep -q . && BASE=staging || BASE=
+```
+
+If `BASE` is empty (`staging` doesn't exist on the remote):
+
+- Determine the repo's default branch: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+- Via AskUserQuestion: *"`staging` branch doesn't exist on the remote. How do you want to proceed?"* with options `[target default branch] [create staging from default first] [abort]`.
+- **If "create staging"**: `git push origin <default>:staging` once, then set `BASE=staging`.
+- **If "target default"**: set `BASE=<default-branch-name>`.
+- **If "abort"**: stop.
+
+**Never create `staging` unilaterally** — only on explicit user approval via the question above.
+
+Then continue:
+
 1. Check for an existing PR: `gh pr view --json url,number,baseRefName,body 2>/dev/null`.
 
-2. **If a PR exists** targeting `staging`:
+2. **If a PR exists** targeting `$BASE`:
    - Capture its URL, number, and current body.
    - Via AskUserQuestion: *"An open PR already exists for this branch. Append a summary of the new commits to the PR description?"* [yes / no]
    - If **yes**: append a new section to the existing body using `gh pr edit <num> --body-file -`. Preserve the original body verbatim; append a `## Update <YYYY-MM-DD>` section with bullets summarizing the new commits and any additions to the test plan.
    - If **no**: leave the body untouched.
    - Skip PR creation; continue to step 9.
 
-3. **If no PR exists**: `gh pr create --base staging` with:
+3. **If no PR exists**: `gh pr create --base "$BASE"` with:
    - **Title**: `<type>(<scope>): <description>` using the dominant type and an extracted scope. Double-check both against the workflow-extracted lists.
    - **Body** (HEREDOC):
 
