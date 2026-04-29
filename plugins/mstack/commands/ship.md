@@ -113,9 +113,9 @@ Then continue:
    - If **no**: leave the body untouched.
    - Skip PR creation; continue to step 9.
 
-3. **If no PR exists**: `gh pr create --base "$BASE"` with:
-   - **Title**: `<type>(<scope>): <description>` using the dominant type and an extracted scope. Double-check both against the workflow-extracted lists.
-   - **Body** (HEREDOC):
+3. **If no PR exists**:
+   - Draft the title: `<type>(<scope>): <description>` using the dominant type and an extracted scope. Double-check both against the workflow-extracted lists. Keep it under 70 characters.
+   - Draft the body (HEREDOC):
 
          ## Summary
          <1-3 bullets on what changed and why>
@@ -123,7 +123,8 @@ Then continue:
          ## Test plan
          <bulleted checklist for verifying the changes>
 
-   - Capture the PR URL and number (last numeric segment of the URL).
+   - **Show the proposed title to the user** in plain text before creating the PR. The body has already been laid out above. The user may correct either before posting.
+   - Once approved, run `gh pr create --base "$BASE" --title "<title>" --body-file ...` and capture the PR URL and number (last numeric segment of the URL).
 
 ### 9. Inline comments for large PRs
 Measure PR size against the PR base — never `HEAD~1`:
@@ -153,4 +154,10 @@ If it qualifies:
 - If any sub-step fails, skip gracefully.
 
 ### 10. Report
-Summarize: branch name, the list of commits created (oneline), whether the PR was **created** or **updated**, and the PR URL.
+Summarize:
+
+- Branch name
+- List of commits created (oneline)
+- Whether the PR was **created** or **updated**
+- **PR title**
+- PR URL
