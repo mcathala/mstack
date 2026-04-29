@@ -48,17 +48,20 @@ Analyze the full diff (staged + unstaged + untracked). Group changes into the sm
 - If a single file mixes unrelated hunks, try `git add -p`. Fall back to a single-file commit if patch mode is awkward.
 - Do NOT split artificially — one intent = one commit, even across many files.
 
-Identify the **dominant commit type** (most significant change) — used for branch naming and PR title. Precedence when mixed: `feat > update > fix > perf > refactor > test > docs > ci > chore`.
+Identify the **dominant commit type** (most significant change) — used for branch naming and PR title. Precedence when mixed: `revert > hotfix > feat > update > fix > perf > refactor > test > style > docs > ci > chore`.
 
+- `revert` undoes a previous commit; use `git revert`'s default message shape.
+- `hotfix` is an **urgent fix** that bypasses normal review/release cadence — wins over a regular `fix`.
 - `feat` is for **brand-new** capabilities (new skill, new endpoint, new command).
 - `update` is for **reshaping existing functionality** (changing how an existing skill / module / template works).
 - `refactor` is for **behavior-preserving rewrites** (rename, restructure-without-semantic-change).
+- `style` is for **formatting/whitespace only** — no code change. Use sparingly; prefer auto-formatters.
 
 If intents are genuinely unrelated, flag it — the user may want to ship as separate PRs.
 
 ### 3. Resolve the target branch
 
-- If `$ARGUMENTS` is provided and non-empty: use it. If it lacks a known prefix (`feat-`, `update-`, `fix-`, `chore-`, `refactor-`, `docs-`, `hotfix-`, `release-`, `test-`, `ci-`, `perf-`), prefix it with `<dominant-type>-`.
+- If `$ARGUMENTS` is provided and non-empty: use it. If it lacks a known prefix (`revert-`, `hotfix-`, `feat-`, `update-`, `fix-`, `perf-`, `refactor-`, `test-`, `style-`, `docs-`, `ci-`, `chore-`, `release-`), prefix it with `<dominant-type>-`.
 - Else, if the current branch is NOT `master` and NOT `staging`: use the current branch.
 - Else, ask via AskUserQuestion for a branch name (suggest one derived from the dominant type + diff summary).
 
