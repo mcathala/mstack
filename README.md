@@ -15,15 +15,24 @@ Workflow skills and commands for shipping with agents.
 | Skill | Description |
 |-------|-------------|
 | `sync` | Interview the user relentlessly about a plan until each branch of the design tree is resolved. |
-| `to-action` | Turn an aligned understanding (typically from `/sync`) into a PRD as a parent GitHub issue plus vertical-slice child issues an AI can pick up cold. |
+| `to-action` | Turn an aligned understanding (typically from `/sync`) into a PRD as a parent GitHub issue plus task issues — each with priority (`high`/`medium`/`low`), blocked-by, sub-tasks, and relevant files. Kanban-board-shaped output. |
+| `start-plan` | Implement the full PRD from `/to-action` by walking through every unblocked task issue in dependency order. Walks each task's sub-tasks one at a time, applying TDD where the work is deterministic, ticking the checkbox in the issue body as each sub-task completes. |
+| `validate` | Run a local check against the iteration's declared metric and return pass/fail with a loop-back recommendation. |
+| `diagnose` | Disciplined debug loop for stuck-red tests, runtime errors, and metric regressions. Build a feedback loop → reproduce → hypothesise → instrument → fix → regression-test. Invoked from `/start-plan` and `/validate` when something fails non-obviously. |
 | `create-skill` | Scaffold a new agent skill with proper structure, progressive disclosure, and a strong description. |
 
 **Workflow:**
 
 ```
 /sync         → discover and align (relentless interview)
-/to-action    → commit the plan (PRD issue + child issues)
-hand to AI    → child issues, one at a time
+/to-action    → commit the plan (PRD issue + task issues with priority + sub-tasks)
+/start-plan   → walk task issues, TDD per sub-task, tick checkboxes
+/validate     → check the iteration against its metric
+/ship         → commit, push, open PR
+
+Sidecar: /diagnose — invoked from /start-plan or /validate when something
+                     fails non-obviously (stuck-red test, mysterious metric
+                     regression). Returns control to the caller after the fix.
 ```
 
 **Commands** (user-invoked via `/` prefix):
@@ -31,6 +40,48 @@ hand to AI    → child issues, one at a time
 | Command | Description |
 |---------|-------------|
 | `/ship` | Commit current changes as multiple logical commits, push to a feature branch, and open (or update) a PR targeting `staging`. Refuses to push to `master`/`staging`. |
+
+## Planned work
+
+The following pieces of mstack are **not yet shipped** — listed here so they don't get forgotten. The skills above intentionally don't reference them yet; once each piece lands, the relevant skill(s) will be updated to read/write to it.
+
+### Planned persistent documents
+
+mstack assumes a small set of repo-local documents that build up over time and are read/written by skills. Each one solves a different connective-tissue problem in the flow:
+
+- **`CONTEXT.md`** — domain glossary; single source of truth for terminology. *Why:* keeps language consistent across humans and agents, reduces verbosity (one term replaces five paraphrases), and makes the codebase more navigable for the next agent picking up cold.
+- **`EXPERIMENTS.md`** — running log of iterations and their metric impact (kept / killed / iterated). *Why:* research-flavored work needs cumulative memory across iterations. Without it, you re-try things you already killed and forget what the previous best variant was.
+- **`design-tree.md`** — record of design decisions and the alternatives that were considered but not chosen, navigable as a tree. *Why:* ADRs capture *why* a decision was made; the design-tree captures *which alternatives were on the table*. Future reconsideration knows what was already weighed.
+- **`docs/adr/NNNN-*.md`** — Architecture Decision Records, one file per hard-to-reverse, surprising-without-context decision. *Why:* prevents re-litigating settled decisions; the "why" survives the original conversation it was decided in.
+
+### Planned skills
+
+| Skill | Step | Notes |
+|---|---|---|
+| `propose` | step 1 (kick-off) | Frames the iteration: captures the idea, declares the metric (so `/validate` has a durable place to read it from), and for research iterations, captures the hypothesis + baseline + kill criteria. |
+| `explore` | step 1a (optional) | EDA / analytics / codebase walk before `/sync`. Used when you can't yet articulate what to sync about — the output feeds the sync session. |
+
+### Planned: embedded doc-update pattern
+
+Doc-writing will be **embedded per skill**, not centralized in a separate `doc-update` skill. Trade-off: a format change touches every skill that writes the doc, but each skill stays self-contained — no inter-skill dependency to break.
+
+Once the persistent docs above land, each skill will write to them inline as decisions / results crystallize:
+
+| Skill | Writes / updates |
+|---|---|
+| `/sync` | `CONTEXT.md` (terms resolved during the interview); `design-tree.md` (when a branch resolves with a real alternative ruled out) |
+| `/to-action` | (none — outputs flow into GitHub issues, not local docs) |
+| `/start-plan` | `CONTEXT.md` (when implementation introduces or sharpens a domain term); ADR (when a load-bearing implementation decision crystallizes) |
+| `/validate` | `EXPERIMENTS.md` (every run, pass or fail); ADR (when validation reveals a finding worth not re-litigating, e.g., "we tried gradient boosting twice — don't re-suggest") |
+| `/diagnose` | `EXPERIMENTS.md` (for metric-regression diagnoses — what regressed, what caused it, the fix); `CONTEXT.md` (rarely, only if a term was sharpened during the investigation); ADR (when the root cause was a load-bearing architectural choice) |
+| `/ship` | (none) |
+| `/propose` (planned) | `EXPERIMENTS.md` (declares the iteration's metric, baseline, and kill criteria — `/validate` reads this back later) |
+
+Conventions the embedded writes will follow:
+
+- **Lazy creation** — never scaffold empty files; create the doc on first write.
+- **Inline updates** — capture as decisions crystallize, don't batch at the end.
+- **Short entries** — each entry should be readable in 30 seconds.
 
 ## Setup (one-time)
 

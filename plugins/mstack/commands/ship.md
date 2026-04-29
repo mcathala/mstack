@@ -18,7 +18,7 @@ Commit all current changes as **multiple small, reviewer-friendly commits**, pus
 ## Rules
 
 - **NEVER push to `master` or `staging`.** Non-negotiable.
-- **PRs always target `staging`.**
+- **PRs target `staging` when it exists on the remote, otherwise the repo's default branch.** If `staging` is missing, **ask before creating it** — never create it unilaterally.
 - **Prefer multiple small commits** over one large commit — each commit = one coherent intent. A reviewer should be able to understand each commit in isolation.
 - **Never use `git add -A`.** Stage exactly the paths belonging to the current commit group.
 - Branch names use **dashes (`-`)**, not slashes (`/`). Example: `fix-kobalt-my-feature-sc-1234`.
@@ -48,13 +48,20 @@ Analyze the full diff (staged + unstaged + untracked). Group changes into the sm
 - If a single file mixes unrelated hunks, try `git add -p`. Fall back to a single-file commit if patch mode is awkward.
 - Do NOT split artificially — one intent = one commit, even across many files.
 
-Identify the **dominant commit type** (most significant change) — used for branch naming and PR title. Precedence when mixed: `feat > fix > perf > refactor > test > docs > ci > chore`.
+Identify the **dominant commit type** (most significant change) — used for branch naming and PR title. Precedence when mixed: `revert > hotfix > feat > update > fix > perf > refactor > test > style > docs > ci > chore`.
+
+- `revert` undoes a previous commit; use `git revert`'s default message shape.
+- `hotfix` is an **urgent fix** that bypasses normal review/release cadence — wins over a regular `fix`.
+- `feat` is for **brand-new** capabilities (new skill, new endpoint, new command).
+- `update` is for **reshaping existing functionality** (changing how an existing skill / module / template works).
+- `refactor` is for **behavior-preserving rewrites** (rename, restructure-without-semantic-change).
+- `style` is for **formatting/whitespace only** — no code change. Use sparingly; prefer auto-formatters.
 
 If intents are genuinely unrelated, flag it — the user may want to ship as separate PRs.
 
 ### 3. Resolve the target branch
 
-- If `$ARGUMENTS` is provided and non-empty: use it. If it lacks a known prefix (`feat-`, `fix-`, `chore-`, `refactor-`, `docs-`, `hotfix-`, `release-`, `test-`, `ci-`, `perf-`), prefix it with `<dominant-type>-`.
+- If `$ARGUMENTS` is provided and non-empty: use it. If it lacks a known prefix (`revert-`, `hotfix-`, `feat-`, `update-`, `fix-`, `perf-`, `refactor-`, `test-`, `style-`, `docs-`, `ci-`, `chore-`, `release-`), prefix it with `<dominant-type>-`.
 - Else, if the current branch is NOT `master` and NOT `staging`: use the current branch.
 - Else, ask via AskUserQuestion for a branch name (suggest one derived from the dominant type + diff summary).
 
@@ -79,18 +86,36 @@ After the loop, `git status` must show a clean tree.
 
 ### 8. Create or update the PR
 
+**First, resolve the PR target branch (`BASE`):**
+
+```bash
+git ls-remote --heads origin staging | grep -q . && BASE=staging || BASE=
+```
+
+If `BASE` is empty (`staging` doesn't exist on the remote):
+
+- Determine the repo's default branch: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+- Via AskUserQuestion: *"`staging` branch doesn't exist on the remote. How do you want to proceed?"* with options `[target default branch] [create staging from default first] [abort]`.
+- **If "create staging"**: `git push origin <default>:staging` once, then set `BASE=staging`.
+- **If "target default"**: set `BASE=<default-branch-name>`.
+- **If "abort"**: stop.
+
+**Never create `staging` unilaterally** — only on explicit user approval via the question above.
+
+Then continue:
+
 1. Check for an existing PR: `gh pr view --json url,number,baseRefName,body 2>/dev/null`.
 
-2. **If a PR exists** targeting `staging`:
+2. **If a PR exists** targeting `$BASE`:
    - Capture its URL, number, and current body.
    - Via AskUserQuestion: *"An open PR already exists for this branch. Append a summary of the new commits to the PR description?"* [yes / no]
    - If **yes**: append a new section to the existing body using `gh pr edit <num> --body-file -`. Preserve the original body verbatim; append a `## Update <YYYY-MM-DD>` section with bullets summarizing the new commits and any additions to the test plan.
    - If **no**: leave the body untouched.
    - Skip PR creation; continue to step 9.
 
-3. **If no PR exists**: `gh pr create --base staging` with:
-   - **Title**: `<type>(<scope>): <description>` using the dominant type and an extracted scope. Double-check both against the workflow-extracted lists.
-   - **Body** (HEREDOC):
+3. **If no PR exists**:
+   - Draft the title: `<type>(<scope>): <description>` using the dominant type and an extracted scope. Double-check both against the workflow-extracted lists. Keep it under 70 characters.
+   - Draft the body (HEREDOC):
 
          ## Summary
          <1-3 bullets on what changed and why>
@@ -98,7 +123,8 @@ After the loop, `git status` must show a clean tree.
          ## Test plan
          <bulleted checklist for verifying the changes>
 
-   - Capture the PR URL and number (last numeric segment of the URL).
+   - **Show the proposed title to the user** in plain text before creating the PR. The body has already been laid out above. The user may correct either before posting.
+   - Once approved, run `gh pr create --base "$BASE" --title "<title>" --body-file ...` and capture the PR URL and number (last numeric segment of the URL).
 
 ### 9. Inline comments for large PRs
 Measure PR size against the PR base — never `HEAD~1`:
@@ -128,4 +154,10 @@ If it qualifies:
 - If any sub-step fails, skip gracefully.
 
 ### 10. Report
-Summarize: branch name, the list of commits created (oneline), whether the PR was **created** or **updated**, and the PR URL.
+Summarize:
+
+- Branch name
+- List of commits created (oneline)
+- Whether the PR was **created** or **updated**
+- **PR title**
+- PR URL
