@@ -1,6 +1,6 @@
 ---
 name: to-action
-description: Turn an aligned understanding (typically from /sync) into action — a PRD as a parent GitHub issue plus vertical-slice child issues an AI can pick up cold. Use when the user says "make this actionable", "turn this into issues", "commit this plan", or follows /sync. Do NOT interview — synthesize what was already discussed.
+description: Turn an aligned understanding (typically from /sync) into action — a PRD as a parent GitHub issue plus task issues with priority, blocked-by, sub-tasks, and relevant files (kanban-board-shaped). Use when the user says "make this actionable", "turn this into issues", "commit this plan", or follows /sync. Do NOT interview — synthesize what was already discussed.
 ---
 
 # to-action
@@ -8,15 +8,15 @@ description: Turn an aligned understanding (typically from /sync) into action �
 Commit a planning conversation into a fanned-out plan on GitHub:
 
 - **Phase A:** PRD as a parent issue
-- **Phase B:** vertical-slice child issues, linked to the parent
+- **Phase B:** Task issues with priority and blocked-by, each containing sub-tasks and a list of relevant files
 
-Each child issue is written so an AI agent can pick it up cold and start working.
+Each task issue is written so an AI agent or junior developer can pick it up cold and start working.
 
 **Do NOT interview the user.** /sync already did that. If something is genuinely missing, ask a single targeted question — never a questionnaire.
 
 ## When to skip
 
-If the work is genuinely one-issue-sized (a bug fix, a small UI tweak, a contained refactor), don't write a PRD. Tell the user, offer to open one issue using the issue template (minus Parent), and stop.
+If the work is genuinely one-issue-sized (a bug fix, a small UI tweak, a contained refactor), don't write a PRD. Tell the user, offer to open one issue using the task template (minus Parent), and stop.
 
 ## Phase 0 — Confirm understanding
 
@@ -37,11 +37,13 @@ Wait for the user's go-ahead. If they correct anything, update your understandin
 
 Identify the major modules to build or modify. Look for opportunities to extract **deep modules** — simple interfaces hiding substantial functionality, testable in isolation.
 
-Confirm the module list with the user. Confirm which modules they want tests for.
+Confirm the module list with the user.
 
 ### A2. Draft the PRD
 
-Use the template below. Show the draft. Confirm before posting — `gh issue create` is a shared-state action.
+Use the template below. The PRD's primary reader is a **junior developer or AI agent** — be explicit, unambiguous, and avoid jargon.
+
+Show the draft. Confirm before posting — `gh issue create` is a shared-state action.
 
 ### A3. Post to GitHub
 
@@ -51,103 +53,126 @@ Use `gh issue create` with the body via heredoc. Return the parent issue URL.
 
 ### PRD template
 
+The template flexes for both user-facing features and research/data-science work. Two sections behave differently:
+
+- **User Stories** is included when there's a user distinct from the developer; omit when the developer *is* the user (research, internal tooling).
+- **Success Metrics** absorbs hypothesis / baseline / kill criteria for evidence-driven work.
+
 ```markdown
-## Problem
-The problem from the user's perspective. One tight paragraph.
+## Introduction / Overview
+Briefly describe the feature and the problem it solves. State the goal in one sentence.
 
-## Solution
-The solution from the user's perspective. One tight paragraph.
+## Goals
+The specific, measurable objectives for this feature. A short list.
 
-## User Stories
-A small, well-chosen list. Numbered (US-001, US-002, ...) so Phase B can reference them. Quality over volume.
+## User Stories  (omit if the developer is the user)
+User narratives describing feature usage and benefits.
+Format: "As a <actor>, I want <feature>, so that <benefit>."
 
-Format: As a <actor>, I want <feature>, so that <benefit>.
+## Functional Requirements
+Numbered list of specific functionalities the feature must have. Clear, concise language.
+Example: "1. The system must allow users to upload a profile picture."
 
-User stories describe value to a user. If a "story" is really an implementation task ("add column to DB"), put it in Implementation Decisions instead.
+## Non-Goals (Out of Scope)
+What this feature will NOT include.
 
-## Implementation Decisions
-- Modules and their interfaces
-- Architectural decisions
-- Schema changes / API contracts / specific interactions
+## Design Considerations  (optional)
+Mockups, UI/UX requirements, relevant components/styles, if applicable.
 
-No file paths or code snippets — they go stale.
+## Technical Considerations  (optional)
+Known technical constraints, dependencies, suggestions.
+Example: "Should integrate with the existing Auth module."
 
-## Testing Decisions
-Which modules will be tested. Reference prior art (similar tests in the codebase) instead of re-litigating testing philosophy.
+## Success Metrics
+How success is measured.
 
-## Out of Scope
-Explicit non-goals.
+- For build work: usage / engagement / quality metrics ("reduce support tickets related to X by 30%").
+- For research / evidence-driven work, include explicitly:
+  - **Baseline:** the current state we're comparing against
+  - **Threshold:** the number that decides PASS vs FAIL
+  - **Kill criteria:** when to stop trying (e.g., "after 3 variants without ≥ 0.001 improvement")
 
 ## Open Questions
-Genuinely unresolved items. Leave empty if there are none — not a junk drawer.
+Remaining questions, areas needing further clarification. Leave empty if there are none — not a junk drawer.
 ```
 
-## Phase B — Slices
+## Phase B — Tasks
 
-### B1. Draft vertical slices
+The output is shaped like a kanban board — each task carries a **priority** and a **blocked by** list, so the work surfaces in the right order downstream (`/start-plan` walks high-priority unblocked tasks first).
 
-Each slice is a thin path through every layer the feature touches (schema → API → UI → tests), demoable on its own.
+### B1. Generate the full breakdown (single pass)
 
-**Vertical is the default.** Horizontal is allowed when honestly justified — schema migrations, refactors, dep upgrades, foundation work. Mark these explicitly and explain why.
+Based on the PRD, generate the full task breakdown in one pass — do not pause between parent tasks and sub-tasks.
 
-**Size:** thin enough to demo independently *and* ship in roughly one focused session. Finer than that is bookkeeping.
+For each parent task, produce:
 
-Mark each slice **unblocked** or **blocked by #N**. Prefer unblocked.
-
-### B2. Quiz the user
-
-Show the proposed breakdown as a numbered list. For each slice:
-
-- **Title**
-- **State**: unblocked / blocked by #N
-- **Implements**: PRD user stories (US-001, ...)
+- **Title** — short, descriptive
+- **Priority** — `high` / `medium` / `low`. High = critical path or unblocks others; low = nice-to-have or can wait.
+- **State** — `unblocked` or `blocked by #N`
+- **Implements** — which PRD functional requirements (1, 3, ...)
+- **Sub-tasks** — actionable items implied by the PRD; one line each
+- **Relevant files** — files that will be created or modified, including test files; one line each
 - **One-line description**
 
-Ask:
-- Granularity right? Too coarse / too fine?
-- Dependencies right?
-- Anything missing?
-- Any labels to apply to all child issues?
+Use judgment on parent-task count — typically about 5. Each parent should be a cohesive chunk of work, demoable or verifiable on its own when possible. If a task can't stand alone (foundational migration, refactor, dep upgrade), mark it explicitly.
 
-Iterate until approved.
+### B2. Confirm the breakdown
+
+Show the full breakdown to the user as a numbered list. Ask **once**:
+
+> "Look right? Anything to change before I post these as issues?"
+
+Iterate if the user pushes back. When approved, proceed to B3. **No mandatory pause between sub-task generation and posting** — generation and confirmation are a single step.
 
 ### B3. Create the issues
 
-After approval, create all issues in one batch — no per-issue confirmation. Create in dependency order so blocker issue numbers exist when referenced.
+After approval, create all task issues in one batch — no per-issue confirmation. Create in dependency order so blocker issue numbers exist when referenced.
 
-Use GitHub's native sub-issue feature if the repo has it enabled (`gh api`); otherwise use task-list syntax for blockers (`- [ ] #N`) so the checkbox auto-ticks when the referenced issue closes.
+Use GitHub's native sub-issue feature if the repo has it enabled (`gh api`); otherwise the parent-child link lives in the task body's `## Parent` field plus the summary comment in B4.
 
-After all issues are created, post **one** comment on the parent PRD listing the children. Do not modify the parent body or close it.
+Apply priority labels: `priority: high`, `priority: medium`, `priority: low`. Create the labels once if they don't exist.
 
-### Issue template
+### B4. Summary comment
+
+After all issues are created, post **one** comment on the parent PRD listing the children with their priority and blocked-by state. Do not modify the parent body or close it.
+
+### Task issue template
 
 ```markdown
 ## Parent
 #<parent-issue-number>
 
+## Priority
+high  (or medium / low)
+
 ## Implements
-PRD user stories: US-001, US-003
+PRD functional requirements: 1, 3
 
-## What to build
-The end-to-end behavior of this slice from a user's perspective. Not layer-by-layer steps. Written so an agent with no prior conversation context can understand the goal.
+## Relevant Files
+- `path/to/file1.ts` — Brief description of why this file is relevant.
+- `path/to/file1.test.ts` — Unit tests for `file1.ts`.
+- `path/to/another/file.tsx` — Brief description.
+- `path/to/another/file.test.tsx` — Unit tests for `another/file.tsx`.
 
-## Acceptance criteria
-- [ ] Specific, verifiable criterion
-- [ ] Another verifiable criterion
-- [ ] [for UI changes] Verified in browser
+## Notes
+- Brief implementation notes if any (e.g., "Tests colocated with implementation files").
 
-Universal gates (typecheck, tests pass) apply to every issue and are not repeated here.
+## Subtasks
+- [ ] 1.1 Sub-task description
+- [ ] 1.2 Sub-task description
+- [ ] 1.3 Sub-task description
 
 ## Blocked by
 - [ ] #<issue-number>
 
-(omit this section if unblocked)
+(omit Blocked by if unblocked)
 ```
 
 ## Acceptance criteria conventions
 
 - **Verifiable, not vague.** "Works correctly" is bad. "Button shows confirmation dialog before deleting" is good.
-- **Universal gates** (typecheck, tests, UI verified in browser for UI changes) are Definition of Done — stated once project-wide, not repeated on every story.
+- Each sub-task is a verifiable unit. When all sub-tasks are checked, the parent task is done.
+- **Universal gates** (typecheck, tests pass, UI verified in browser for UI changes) are Definition of Done — stated once project-wide, not repeated on every task.
 
 ## Pause and resume
 
@@ -155,8 +180,8 @@ The skill can stop after Phase A — the user might want to sit on the PRD overn
 
 ## Escape hatches
 
-- **Slice too big when written up.** Stop and surface to the user. Don't ship a wrong-sized issue.
-- **Honestly one issue.** Skip the PRD. Open a single issue (issue template minus Parent) and stop.
+- **Task too big when written up.** Stop and surface to the user. Don't ship a wrong-sized issue.
+- **Honestly one issue.** Skip the PRD. Open a single issue (task template minus Parent) and stop.
 
 ## Do not
 
@@ -164,5 +189,5 @@ The skill can stop after Phase A — the user might want to sit on the PRD overn
 - Write the PRD as a `.md` file in the repo. It lives as a GitHub issue.
 - Auto-post to GitHub without confirmation.
 - Modify or close the parent issue. (One summary comment listing children is fine and encouraged.)
-- Use HITL/AFK terminology. Use **blocked / unblocked** — it maps to GitHub natively.
+- Use HITL/AFK terminology. Use **blocked / unblocked** plus `priority: high|medium|low` — both map to GitHub natively.
 - Start implementing. Stop after issues are created.
