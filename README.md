@@ -40,6 +40,7 @@ Sidecar: /diagnose — invoked from /start-plan or /validate when something
 | Command | Description |
 |---------|-------------|
 | `/ship` | Commit current changes as multiple logical commits, push to a feature branch, and open (or update) a PR targeting `staging`. Refuses to push to `master`/`staging`. |
+| `/autoresearch` | Hypothesis-driven autonomous ML research loop: read `program.md`, diagnose the current best's weakness, write a falsifiable hypothesis, branch, implement the smallest change, validate against anti-overfit gates, document — then stop for approval. Never commits or submits without you. |
 
 ## Planned work
 
