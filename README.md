@@ -40,8 +40,9 @@ Sidecar: /diagnose — invoked from /start-plan or /validate when something
 | Command | Description |
 |---------|-------------|
 | `/ship` | Commit current changes as multiple logical commits, push to a feature branch, and open (or update) a PR targeting `staging`. Refuses to push to `master`/`staging`. |
-| `/autoresearch` | Hypothesis-driven autonomous ML research loop: read `program.md`, diagnose the current best's weakness, write a falsifiable hypothesis, branch, implement the smallest change, validate against anti-overfit gates, document — then stop for approval. Never commits or submits without you. |
-
+| `/autoresearch` | Hypothesis-driven autonomous ML research loop. Reads `project.md`, diagnoses the current best's weakness, writes a falsifiable hypothesis, implements the smallest change, validates against anti-overfit gates, auto-commits each cycle on a session branch. Runs until you interrupt — then `/ship` packages the session into a PR. Never pushes, merges, or submits without approval. |
+| `/yoloresearch` | Fully autonomous variant of `/autoresearch`. Same scientific spine, no per-cycle approval: the loop pushes after every commit, opens and refreshes a PR on every `keep`, and auto-submits to Kaggle within budget. Refuses only what would corrupt comparability (CV/seed/data drift) or overrun the submission ceiling. Use when you want to walk away. |
+| `/handoff` | Sync work state with `HANDOFF.md` — reads the prior handoff if one exists (resume) and writes the current state (goal, status, active files, what's been touched, what didn't work, what's next). One command for session start, end, or mid-checkpoint; previous file preserved as `HANDOFF.prev.md`. |
 ## Planned work
 
 The following pieces of mstack are **not yet shipped** — listed here so they don't get forgotten. The skills above intentionally don't reference them yet; once each piece lands, the relevant skill(s) will be updated to read/write to it.
