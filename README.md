@@ -20,6 +20,7 @@ Workflow skills and commands for shipping with agents.
 | `validate` | Run a local check against the iteration's declared metric and return pass/fail with a loop-back recommendation. |
 | `diagnose` | Disciplined debug loop for stuck-red tests, runtime errors, and metric regressions. Build a feedback loop → reproduce → hypothesise → instrument → fix → regression-test. Invoked from `/start-plan` and `/validate` when something fails non-obviously. |
 | `create-skill` | Scaffold a new agent skill with proper structure, progressive disclosure, and a strong description. |
+| `dataviz` | Turn data into one honest, clear chart that makes a single point — and judge whether a chart is any good. Pick-the-chart matrix, encode/focus/land workflow, and a pass-before-ship rubric covering credibility and accessibility. |
 
 **Workflow:**
 
