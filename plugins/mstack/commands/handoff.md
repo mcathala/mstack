@@ -1,12 +1,12 @@
 ---
 description: Compact the current conversation into a handoff doc at a temp path so a fresh agent can pick up the work.
 argument-hint: "[focus] — optional description of what the next session will focus on"
-allowed-tools: Bash(git:*), Bash(mktemp:*), Bash(date:*), Read, Write
+allowed-tools: Bash(git:*), Bash(date:*), Read, Write
 ---
 
 # /handoff — Session handoff
 
-Write a handoff document summarising the current session so a fresh agent can continue the work. Save it to the temp path produced in the Context block below (it already exists as an empty file — `Read` it first, then `Write` over it).
+Write a handoff document summarising the current session so a fresh agent can continue the work. Save it to the **Output path** produced in the Context block below. That path is only *computed*, not created — `Write` to it directly, and overwrite without complaint if something is already there.
 
 This is **not a transcript summary**. It is a state dump answering: what are we building, where do we stand, what's stuck, what's next.
 
@@ -22,7 +22,15 @@ If `$ARGUMENTS` is non-empty, treat it as a description of what the next session
 - Untracked files: !`git ls-files --others --exclude-standard`
 - Recent commits on this branch: !`git log $(git merge-base HEAD main 2>/dev/null || echo HEAD~10)..HEAD --oneline 2>/dev/null | head -20`
 - Diff stat vs main: !`git diff --stat $(git merge-base HEAD main 2>/dev/null || echo HEAD~10)..HEAD 2>/dev/null | tail -15`
-- Output path: !`mktemp "${TMPDIR:-/tmp}/handoff-XXXXXX.md"`
+- Output path: !`d="${TMPDIR:-/tmp}"; printf '%s/handoff-%s.md\n' "${d%/}" "$(date +%Y%m%d-%H%M%S)"`
+
+<!-- Do not "simplify" the Output path back to `mktemp .../handoff-XXXXXX.md`.
+     BSD/macOS mktemp only substitutes a run of X's at the END of the template, so a
+     ".md" suffix leaves the X's literal: the name becomes a constant, the first run
+     creates it, and every later run dies with "mkstemp failed: File exists". GNU
+     mktemp allows a suffix, which is why that form passed on Linux and broke on every
+     macOS user. Here the timestamp is what makes the name unique, and `${d%/}` strips
+     the trailing slash macOS puts on TMPDIR. -->
 
 ## What to write
 
@@ -91,7 +99,7 @@ NOT: "continue working on the parser".>
 
 ## Steps
 
-1. Use the **Output path** from the Context block. `Read` it first (it exists but is empty), then `Write` the composed handoff to that same path.
+1. Use the **Output path** from the Context block **verbatim**. `Write` the composed handoff straight to it — the path is computed, not created, so there is nothing to `Read` first. Do not invent your own path or re-derive it.
 2. Compose using the structure above, populated from:
    - The conversation in this session.
    - The Context block — use the `Time:` and git values **verbatim**, do not guess.
