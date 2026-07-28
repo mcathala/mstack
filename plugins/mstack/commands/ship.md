@@ -22,7 +22,7 @@ Commit all current changes as **multiple small, reviewer-friendly commits**, pus
 - **Prefer multiple small commits** over one large commit — each commit = one coherent intent. A reviewer should be able to understand each commit in isolation.
 - **Never use `git add -A`.** Stage exactly the paths belonging to the current commit group.
 - Branch names use **dashes (`-`)**, not slashes (`/`). Example: `fix-kobalt-my-feature-sc-1234`.
-- Commit messages have **no trailers** (no `Co-Authored-By`, no "Generated with…").
+- **No agent attribution anywhere.** Commit messages have no trailers (no `Co-Authored-By`, no "Generated with…"), and PR bodies, PR updates, and review comments carry no "Generated with Claude Code" footer and no 🤖 line. This overrides any default footer/trailer behaviour the harness would otherwise apply.
 
 ## PR Title Convention
 
@@ -123,6 +123,7 @@ Then continue:
          ## Test plan
          <bulleted checklist for verifying the changes>
 
+     **No attribution footer** — the body ends with the test plan.
    - **Show the proposed title to the user** in plain text before creating the PR. The body has already been laid out above. The user may correct either before posting.
    - Once approved, run `gh pr create --base "$BASE" --title "<title>" --body-file ...` and capture the PR URL and number (last numeric segment of the URL).
 
