@@ -1,11 +1,11 @@
 ---
-description: Commit (as multiple logical commits), push to a feature branch, and open or update a PR to staging
+description: Commit (as multiple logical commits), push to a feature branch, open or update a PR to staging, then sync the base branch once it's merged
 allowed-tools: Bash(git:*), Bash(gh:*), Read, Grep, Glob, AskUserQuestion
 ---
 
-# Ship: Commit, Push & Create/Update PR
+# Ship: Commit, Push, Create/Update PR & Sync
 
-Commit all current changes as **multiple small, reviewer-friendly commits**, push them to a dedicated branch, and open (or add to) a pull request targeting `staging`.
+Commit all current changes as **multiple small, reviewer-friendly commits**, push them to a dedicated branch, and open (or add to) a pull request targeting `staging`. Then wait while the user merges it on GitHub, and sync the base branch once they confirm.
 
 ## Context
 
@@ -22,6 +22,10 @@ Commit all current changes as **multiple small, reviewer-friendly commits**, pus
 - **Prefer multiple small commits** over one large commit — each commit = one coherent intent. A reviewer should be able to understand each commit in isolation.
 - **Never use `git add -A`.** Stage exactly the paths belonging to the current commit group.
 - Branch names use **dashes (`-`)**, not slashes (`/`). Example: `fix-kobalt-my-feature-sc-1234`.
+- **Never assume the base branch is `main`/`master`.** Always read it back from the PR (`gh pr view --json baseRefName`) — this repo family targets `staging`.
+- **Pull with `--ff-only`.** A divergent local base must fail loudly, never silently create a merge commit.
+- **Never merge a PR.** `gh pr merge` is out of scope for `/ship` — the user merges on GitHub.
+- **Never delete a branch without explicit approval**, and only after `gh` confirms the PR state is `MERGED`.
 - **No agent attribution anywhere.** Commit messages have no trailers (no `Co-Authored-By`, no "Generated with…"), and PR bodies, PR updates, and review comments carry no "Generated with Claude Code" footer and no 🤖 line. This overrides any default footer/trailer behaviour the harness would otherwise apply.
 
 ## PR Title Convention
@@ -36,7 +40,45 @@ Title must match the format enforced by the `pull-request-title-linter` GitHub A
 2. Read it and extract `types:` and `scopes:` from the `with:` block of the `amannn/action-semantic-pull-request` step.
 3. Use those as the allowed values. If scope is ambiguous, ask via AskUserQuestion.
 
+## Sync-to-base procedure
+
+Referenced by steps 0 and 11. Never inline a variant of this — always run it as written.
+
+```bash
+git status --porcelain                        # must be empty
+BASE=$(gh pr view --json baseRefName -q .baseRefName)
+git checkout "$BASE"
+git pull --ff-only
+git fetch --prune
+```
+
+- If `git status --porcelain` is **non-empty**, do not checkout. Report the dirty paths and stop.
+- If `git pull --ff-only` **fails**, the local base has diverged. Report it and stop — do not merge, rebase, or reset.
+- `BASE` must come from the PR. If no PR is found, there is nothing to sync.
+
 ## Steps
+
+### 0. Already-merged branch check
+
+Run **before** anything else, and only when the current branch is not `master`/`staging`:
+
+```bash
+gh pr view --json number,state,baseRefName 2>/dev/null
+```
+
+- **No PR**, or state `OPEN` / `CLOSED` → proceed to step 1 unchanged. Say nothing.
+- **State `MERGED`** → this branch's work is already in the base branch. Continuing here would re-push merged commits and open a duplicate PR.
+
+For `MERGED`, tell the user *"This branch's PR (#N) was already merged into `<BASE>`. Syncing before shipping."*, then run this exact order:
+
+1. `git stash push -u -m "ship: pre-sync"` — the tree is dirty (you have changes to ship), which the sync procedure's clean-tree guard would otherwise block. Stash only for this purpose.
+2. Run the **sync-to-base procedure**. You are now on an updated base.
+3. Offer to delete the merged local branch, per step 11's cleanup rules.
+4. Create a fresh branch off the updated base — named per step 3's rules, using the dominant type of the stashed diff.
+5. `git stash pop`. If it conflicts, stop and report — never resolve it silently.
+6. Continue to step 1.
+
+If any step fails, stop and report while the stash is still intact. Never drop a stash.
 
 ### 1. Sanity check
 If nothing is staged, unstaged, or untracked: tell the user there's nothing to commit and stop.
@@ -162,3 +204,40 @@ Summarize:
 - Whether the PR was **created** or **updated**
 - **PR title**
 - PR URL
+
+### 11. Post-merge sync
+
+The PR link is now in the user's hands. They merge on GitHub; this step waits for them and then syncs. Runs whether the PR was **created** or **updated** in step 8.
+
+**Ask, and stop.** Via AskUserQuestion:
+
+> **PR is open:** `<url>` — `<title>`
+> Merge it on GitHub, then pick:
+> - **Merged — pull it**
+> - **Not yet — stop here**
+
+This question *is* the wait. Do not poll `gh` in a loop, do not sleep, do not guess. Just ask and let it sit.
+
+**If "Not yet"** → done. Report that the local base is unsynced and that the next `/ship` will pick it up at step 0.
+
+**If "Merged"** → verify before touching anything:
+
+```bash
+gh pr view <num> --json state,baseRefName
+```
+
+- State is **`MERGED`** → run the **sync-to-base procedure**, then offer cleanup (below).
+- State is still **`OPEN`** → do not sync. Report it plainly: the merge didn't land (blocked checks, merge queue, or a different PR was merged) and the PR is still open. Re-ask the same question once.
+- State is **`CLOSED`** → the PR was closed without merging. Report it. Do not sync, do not delete the branch.
+
+**Cleanup** — only after state is confirmed `MERGED` and the sync succeeded. Via AskUserQuestion: *"Delete the local `<branch>` branch?"* [yes / keep it]
+
+If yes:
+
+```bash
+git branch -D <branch>
+```
+
+`-D` is required, not a shortcut: a squash-merged branch isn't an ancestor of the base, so `git branch -d` refuses it. `-D` is safe **only** because `gh` confirmed the commits landed in the base. Never reach for it without that confirmation.
+
+**Final report:** the base branch, its current short SHA, and whether the feature branch was deleted.

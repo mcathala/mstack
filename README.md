@@ -29,7 +29,7 @@ Workflow skills and commands for shipping with agents.
 /to-action    → commit the plan (PRD issue + task issues with priority + sub-tasks)
 /start-plan   → walk task issues, TDD per sub-task, tick checkboxes
 /validate     → check the iteration against its metric
-/ship         → commit, push, open PR
+/ship         → commit, push, open PR, sync base once you've merged it
 
 Sidecar: /diagnose — invoked from /start-plan or /validate when something
                      fails non-obviously (stuck-red test, mysterious metric
@@ -40,7 +40,7 @@ Sidecar: /diagnose — invoked from /start-plan or /validate when something
 
 | Command | Description |
 |---------|-------------|
-| `/ship` | Commit current changes as multiple logical commits, push to a feature branch, and open (or update) a PR targeting `staging`. Refuses to push to `master`/`staging`. |
+| `/ship` | Commit current changes as multiple logical commits, push to a feature branch, and open (or update) a PR targeting `staging`. Then waits while you merge on GitHub — answer and it checks out the base branch, pulls, and offers to delete the merged branch. Also detects an already-merged branch on entry and syncs before shipping. Refuses to push to `master`/`staging`, never merges a PR itself. |
 | `/autoresearch` | Hypothesis-driven autonomous ML research loop. Reads `project.md`, diagnoses the current best's weakness, writes a falsifiable hypothesis, implements the smallest change, validates against anti-overfit gates, auto-commits each cycle on a session branch. Runs until you interrupt — then `/ship` packages the session into a PR. Never pushes, merges, or submits without approval. |
 | `/yoloresearch` | Fully autonomous variant of `/autoresearch`. Same scientific spine, no per-cycle approval: the loop pushes after every commit, opens and refreshes a PR on every `keep`, and auto-submits to Kaggle within budget. Refuses only what would corrupt comparability (CV/seed/data drift) or overrun the submission ceiling. Use when you want to walk away. |
 | `/handoff` | Compact the current session into a handoff doc at a timestamped temp path (`$TMPDIR/handoff-<YYYYMMDD-HHMMSS>.md`) — goal, status, active files, what didn't work, and a specific "Resume here" action. Reports the path so you can hand it to a fresh agent. Write-only: it does not read prior handoffs. |
