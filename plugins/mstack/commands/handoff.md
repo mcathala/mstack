@@ -69,8 +69,8 @@ Omit the section if there are none.>
 
 ## Suggested skills
 <Which skills the next session should consider invoking, if any. e.g.,
-`mstack:start-plan` to continue implementation from the PRD, `mstack:diagnose`
-to debug the failing test, `mstack:validate` to check the metric. Omit
+`mstack:diagnose` to debug the failing test, `mstack:validate` to check
+the metric. Omit
 the section if none apply.>
 
 ## Resume here
