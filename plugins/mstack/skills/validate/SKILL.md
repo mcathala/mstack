@@ -1,6 +1,6 @@
 ---
 name: validate
-description: Run a local check of the current iteration against the declared metric and return pass/fail with a loop-back recommendation. Use when user says "validate", "is this ready", "did it work", "check the metric", or after /start-plan finishes.
+description: Run a local check of the current iteration against the declared metric and return pass/fail with a loop-back recommendation. Use when user says "validate", "is this ready", "did it work", "check the metric", or once implementation of the iteration is finished.
 ---
 
 # validate
@@ -28,7 +28,7 @@ State both before running so the user can correct your reading of the metric.
 
 **Local only.** Do not validate in prod or against the live leaderboard — that's downstream of /ship. The whole point of validate is to catch issues before the world sees them.
 
-If the harness doesn't exist (first iteration, empirical metric), surface that — building the harness is itself a /start-plan task.
+If the harness doesn't exist (first iteration, empirical metric), surface that — building the harness is itself an implementation task.
 
 ## Phase 3 — Report
 
@@ -50,7 +50,7 @@ Don't just say "try again." Diagnose where the failure originates:
 
 | What broke | Loop back to |
 |---|---|
-| Code error, failing test, runtime crash | step 5 — `/start-plan` |
+| Code error, failing test, runtime crash | step 5 — back to implementation |
 | Spec was wrong — code does what was asked, but the metric reveals the ask was wrong | step 3 — rewrite PRD |
 | Alignment was wrong — even a correct spec wouldn't help; we're solving the wrong problem | step 2 — `/sync` |
 | Framing was wrong — the iteration's idea or scope is off | step 1 — new iteration |
@@ -69,4 +69,4 @@ If the cause isn't obvious (failing in unexpected ways, mysterious metric regres
 - Lower the threshold to make it pass. The threshold is part of the contract.
 - Validate against a metric different from the one declared at step 1. Changing the goalpost mid-iteration is the most common way teams fool themselves.
 - Push, commit, or deploy. /ship's job, only after PASS.
-- Invoke /start-plan automatically on fail. Recommend it, let the user trigger it.
+- Start fixing the code automatically on fail. Recommend the loop-back depth, let the user trigger it.

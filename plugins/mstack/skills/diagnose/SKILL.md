@@ -1,13 +1,13 @@
 ---
 name: diagnose
-description: Disciplined debug loop for stuck-red tests, runtime errors, and mysterious metric regressions. Reproduce → hypothesise → instrument → fix → regression-test. Use when /start-plan reports a test won't go green, when /validate reports a metric regression with no obvious cause, when the user says "diagnose this", "debug this", "why is this failing", or describes a bug or unexpected metric drop.
+description: Disciplined debug loop for stuck-red tests, runtime errors, and mysterious metric regressions. Reproduce → hypothesise → instrument → fix → regression-test. Use when a test won't go green during implementation, when /validate reports a metric regression with no obvious cause, when the user says "diagnose this", "debug this", "why is this failing", or describes a bug or unexpected metric drop.
 ---
 
 # diagnose
 
 A discipline for hard failures. Two trigger flavors:
 
-- **Stuck-red bug** — `/start-plan` hit a test that refuses to go green, or runtime code throws unexpectedly.
+- **Stuck-red bug** — implementation hit a test that refuses to go green, or runtime code throws unexpectedly.
 - **Metric regression** — `/validate` reports a fail with no obvious cause: empirical metric dropped, became flaky, or moved in an unexpected direction.
 
 Skip phases only when explicitly justified.
@@ -134,7 +134,7 @@ Required before declaring done:
 
 **Then hand back to the triggering skill:**
 
-- Triggered by `/start-plan` (stuck red) → return to `/start-plan` and continue from the sub-task that was blocked.
+- Triggered during implementation (stuck red) → return to the implementation and continue from the task that was blocked.
 - Triggered by `/validate` (metric regression) → return to `/validate`, re-run the metric, then recommend a loop-back depth based on whether the fix moved it.
 
 ## What would have prevented this?
