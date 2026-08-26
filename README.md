@@ -15,10 +15,8 @@ Workflow skills and commands for shipping with agents.
 | Skill | Description |
 |-------|-------------|
 | `sync` | Interview the user relentlessly about a plan until each branch of the design tree is resolved. |
-| `to-action` | Turn an aligned understanding (typically from `/sync`) into a PRD as a parent GitHub issue plus task issues — each with priority (`high`/`medium`/`low`), blocked-by, sub-tasks, and relevant files. Kanban-board-shaped output. |
-| `start-plan` | Implement the full PRD from `/to-action` by walking through every unblocked task issue in dependency order. Walks each task's sub-tasks one at a time, applying TDD where the work is deterministic, ticking the checkbox in the issue body as each sub-task completes. |
 | `validate` | Run a local check against the iteration's declared metric and return pass/fail with a loop-back recommendation. |
-| `diagnose` | Disciplined debug loop for stuck-red tests, runtime errors, and metric regressions. Build a feedback loop → reproduce → hypothesise → instrument → fix → regression-test. Invoked from `/start-plan` and `/validate` when something fails non-obviously. |
+| `diagnose` | Disciplined debug loop for stuck-red tests, runtime errors, and metric regressions. Build a feedback loop → reproduce → hypothesise → instrument → fix → regression-test. Invoked during implementation or from `/validate` when something fails non-obviously. |
 | `create-skill` | Scaffold a new agent skill with proper structure, progressive disclosure, and a strong description. |
 | `dataviz` | Turn data into one honest, clear chart that makes a single point — and judge whether a chart is any good. Pick-the-chart matrix, encode/focus/land workflow, and a pass-before-ship rubric covering credibility and accessibility. |
 
@@ -26,14 +24,13 @@ Workflow skills and commands for shipping with agents.
 
 ```
 /sync         → discover and align (relentless interview)
-/to-action    → commit the plan (PRD issue + task issues with priority + sub-tasks)
-/start-plan   → walk task issues, TDD per sub-task, tick checkboxes
 /validate     → check the iteration against its metric
 /ship         → commit, push, open PR, sync base once you've merged it
 
-Sidecar: /diagnose — invoked from /start-plan or /validate when something
-                     fails non-obviously (stuck-red test, mysterious metric
-                     regression). Returns control to the caller after the fix.
+Sidecar: /diagnose — invoked during implementation or from /validate when
+                     something fails non-obviously (stuck-red test, mysterious
+                     metric regression). Returns control to the caller after
+                     the fix.
 ```
 
 **Commands** (user-invoked via `/` prefix):
@@ -74,8 +71,6 @@ Once the persistent docs above land, each skill will write to them inline as dec
 | Skill | Writes / updates |
 |---|---|
 | `/sync` | `CONTEXT.md` (terms resolved during the interview); `design-tree.md` (when a branch resolves with a real alternative ruled out) |
-| `/to-action` | (none — outputs flow into GitHub issues, not local docs) |
-| `/start-plan` | `CONTEXT.md` (when implementation introduces or sharpens a domain term); ADR (when a load-bearing implementation decision crystallizes) |
 | `/validate` | `EXPERIMENTS.md` (every run, pass or fail); ADR (when validation reveals a finding worth not re-litigating, e.g., "we tried gradient boosting twice — don't re-suggest") |
 | `/diagnose` | `EXPERIMENTS.md` (for metric-regression diagnoses — what regressed, what caused it, the fix); `CONTEXT.md` (rarely, only if a term was sharpened during the investigation); ADR (when the root cause was a load-bearing architectural choice) |
 | `/ship` | (none) |
