@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "mstack",
-      "description": "Workflow skills: interview, spec, slice, TDD, and keep the codebase agent-friendly",
-      "version": "0.1.0",
+      "description": "Workflow skills: interview, spec, validate, debug and ship",
+      "version": "0.1.1",
       "author": { "name": "Maxime" },
       "source": "./plugins/mstack",
       "category": "productivity"

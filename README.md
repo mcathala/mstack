@@ -10,11 +10,12 @@ A Claude Code marketplace/plugin wrapper so the skills install as a single plugi
 
 Workflow skills and commands for shipping with agents.
 
-**Skills** (model-invoked — Claude uses them when the task matches):
+**Skills** (model-invoked — Claude uses them when the task matches — unless marked user-invoked):
 
 | Skill | Description |
 |-------|-------------|
-| `sync` | Interview the user relentlessly about a plan until each branch of the design tree is resolved. |
+| `sync` | User-invoked: `/mstack:sync <brief>`. Interview until we share one understanding of the request. Detects the work type (project, feature, fix, refactor, explore), builds the design tree, asks in rounds of 2 to 3 questions with a recommended answer. Writes no files. |
+| `spec` | User-invoked: `/mstack:spec`. Turn the decisions from `/sync` into a spec at `docs/specs/<n>-<slug>.md` — original request, problem, decisions, eval and guardrails, tasks. No interview, no code. Ends by asking you to review and say go. |
 | `validate` | Run a local check against the iteration's declared metric and return pass/fail with a loop-back recommendation. |
 | `diagnose` | Disciplined debug loop for stuck-red tests, runtime errors, and metric regressions. Build a feedback loop → reproduce → hypothesise → instrument → fix → regression-test. Invoked during implementation or from `/validate` when something fails non-obviously. |
 | `create-skill` | Scaffold a new agent skill with proper structure, progressive disclosure, and a strong description. |
@@ -23,14 +24,18 @@ Workflow skills and commands for shipping with agents.
 **Workflow:**
 
 ```
-/sync         → discover and align (relentless interview)
-/validate     → check the iteration against its metric
+/sync         → interview: work type, design tree, decisions
+/spec         → write the spec and task list, then wait for go
+build         → the spec tasks one by one (plan then go)
+/code-review  → (planned) review the diff against the spec
 /ship         → commit, push, open PR, sync base once you've merged it
 
-Sidecar: /diagnose — invoked during implementation or from /validate when
-                     something fails non-obviously (stuck-red test, mysterious
-                     metric regression). Returns control to the caller after
-                     the fix.
+Sidecars: /diagnose — when stuck (stuck-red test, runtime error, mysterious
+                      metric regression). Returns control after the fix.
+          /validate — when the work has a metric: check it locally
+                      before /ship.
+
+Chores (dependencies, CI, config): no sync, no spec — just plan then go.
 ```
 
 **Commands** (user-invoked via `/` prefix):
@@ -42,45 +47,17 @@ Sidecar: /diagnose — invoked during implementation or from /validate when
 | `/yoloresearch` | Fully autonomous variant of `/autoresearch`. Same scientific spine, no per-cycle approval: the loop pushes after every commit, opens and refreshes a PR on every `keep`, and auto-submits to Kaggle within budget. Refuses only what would corrupt comparability (CV/seed/data drift) or overrun the submission ceiling. Use when you want to walk away. |
 | `/handoff` | Compact the current session into a handoff doc at a timestamped temp path (`$TMPDIR/handoff-<YYYYMMDD-HHMMSS>.md`) — goal, status, active files, what didn't work, and a specific "Resume here" action. Reports the path so you can hand it to a fresh agent. Write-only: it does not read prior handoffs. |
 
+**Files the skills write:** only `/spec`, to `docs/specs/<n>-<slug>.md`. The other skills write no docs.
+
 ## Planned work
 
-The following pieces of mstack are **not yet shipped** — listed here so they don't get forgotten. The skills above intentionally don't reference them yet; once each piece lands, the relevant skill(s) will be updated to read/write to it.
-
-### Planned persistent documents
-
-mstack assumes a small set of repo-local documents that build up over time and are read/written by skills. Each one solves a different connective-tissue problem in the flow:
-
-- **`CONTEXT.md`** — domain glossary; single source of truth for terminology. *Why:* keeps language consistent across humans and agents, reduces verbosity (one term replaces five paraphrases), and makes the codebase more navigable for the next agent picking up cold.
-- **`EXPERIMENTS.md`** — running log of iterations and their metric impact (kept / killed / iterated). *Why:* research-flavored work needs cumulative memory across iterations. Without it, you re-try things you already killed and forget what the previous best variant was.
-- **`design-tree.md`** — record of design decisions and the alternatives that were considered but not chosen, navigable as a tree. *Why:* ADRs capture *why* a decision was made; the design-tree captures *which alternatives were on the table*. Future reconsideration knows what was already weighed.
-- **`docs/adr/NNNN-*.md`** — Architecture Decision Records, one file per hard-to-reverse, surprising-without-context decision. *Why:* prevents re-litigating settled decisions; the "why" survives the original conversation it was decided in.
+The following pieces of mstack are **not yet shipped** — listed here so they don't get forgotten.
 
 ### Planned skills
 
 | Skill | Step | Notes |
 |---|---|---|
-| `propose` | step 1 (kick-off) | Frames the iteration: captures the idea, declares the metric (so `/validate` has a durable place to read it from), and for research iterations, captures the hypothesis + baseline + kill criteria. |
-| `explore` | step 1a (optional) | EDA / analytics / codebase walk before `/sync`. Used when you can't yet articulate what to sync about — the output feeds the sync session. |
-
-### Planned: embedded doc-update pattern
-
-Doc-writing will be **embedded per skill**, not centralized in a separate `doc-update` skill. Trade-off: a format change touches every skill that writes the doc, but each skill stays self-contained — no inter-skill dependency to break.
-
-Once the persistent docs above land, each skill will write to them inline as decisions / results crystallize:
-
-| Skill | Writes / updates |
-|---|---|
-| `/sync` | `CONTEXT.md` (terms resolved during the interview); `design-tree.md` (when a branch resolves with a real alternative ruled out) |
-| `/validate` | `EXPERIMENTS.md` (every run, pass or fail); ADR (when validation reveals a finding worth not re-litigating, e.g., "we tried gradient boosting twice — don't re-suggest") |
-| `/diagnose` | `EXPERIMENTS.md` (for metric-regression diagnoses — what regressed, what caused it, the fix); `CONTEXT.md` (rarely, only if a term was sharpened during the investigation); ADR (when the root cause was a load-bearing architectural choice) |
-| `/ship` | (none) |
-| `/propose` (planned) | `EXPERIMENTS.md` (declares the iteration's metric, baseline, and kill criteria — `/validate` reads this back later) |
-
-Conventions the embedded writes will follow:
-
-- **Lazy creation** — never scaffold empty files; create the doc on first write.
-- **Inline updates** — capture as decisions crystallize, don't batch at the end.
-- **Short entries** — each entry should be readable in 30 seconds.
+| `code-review` | after build | Fresh-context subagent, reviews the diff against the spec. |
 
 ## Setup (one-time)
 
