@@ -14,8 +14,8 @@ Workflow skills and commands for shipping with agents.
 
 | Skill | Description |
 |-------|-------------|
-| `sync` | User-invoked: `/mstack:sync <brief>`. Interview until we share one understanding of the request. Detects the work type (project, feature, fix, refactor, explore), builds the design tree, asks in rounds of 2 to 3 questions with a recommended answer. Writes no files. |
-| `spec` | User-invoked: `/mstack:spec`. Turn the decisions from `/sync` into a spec at `docs/specs/<n>-<slug>.md` — original request, problem, decisions, eval and guardrails, tasks. No interview, no code. Ends by asking you to review and say go. |
+| `sync` | User-invoked: `/mstack:sync <brief>`. Interview until we share one understanding of the request. Detects the work type (project, feature, fix, refactor, explore), reads linked briefs, issues and docs, starts from your approach or proposes a plan if you gave none, builds the design tree, and each round asks every open choice that can be decided now, with 2 to 3 options and a recommendation. Writes no files. |
+| `spec` | User-invoked: `/mstack:spec`. Turn the decisions from `/sync` into a one-page spec at `docs/specs/<n>-<slug>.md` — summary (problem, solution, done when), original request, decisions, eval and guardrails, tasks. A new step gets its own spec linked in "Related". No interview, no code. Ends by asking you to review and say go. |
 | `validate` | Run a local check against the iteration's declared metric and return pass/fail with a loop-back recommendation. |
 | `diagnose` | Disciplined debug loop for stuck-red tests, runtime errors, and metric regressions. Build a feedback loop → reproduce → hypothesise → instrument → fix → regression-test. Invoked during implementation or from `/validate` when something fails non-obviously. |
 | `create-skill` | Scaffold a new agent skill with proper structure, progressive disclosure, and a strong description. |
@@ -26,7 +26,7 @@ Workflow skills and commands for shipping with agents.
 ```
 /sync         → interview: work type, design tree, decisions
 /spec         → write the spec and task list, then wait for go
-build         → the spec tasks one by one (plan then go)
+build         → all spec tasks in order, after one go
 /code-review  → (planned) review the diff against the spec
 /ship         → commit, push, open PR, sync base once you've merged it
 
