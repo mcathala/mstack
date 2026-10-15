@@ -1,48 +1,61 @@
 ---
 name: sync
-description: Interview the user until we share one understanding of a project, feature, fix, refactor or exploration, before /spec.
-argument-hint: [brief or request]
+description: Interview the user until we share one understanding of a project, feature, fix, refactor or exploration, before /spec. Use only when the user asks for sync by name.
+argument-hint: [request, or your planned approach]
 disable-model-invocation: true
 ---
 
-Interview me until we reach a shared understanding of this request. Do not create or edit files, and do not write code.
+Align with me on what to build before any spec or code. Do not create or edit files, and do not write code.
 
 Request: $ARGUMENTS
-If empty, use the brief or my latest message.
+If empty, use my latest message and any linked brief, issue or doc.
 
 ## 1. Read first
 
-Read the request and the repo. Never ask what they already answer. Finding facts is your job; decisions are mine.
+Read the request, the repo and every linked doc. Never ask what they already answer. Finding facts is your job; decisions are mine.
 
-## 2. Type and design tree
+## 2. Start from my approach
 
-- Detect the type: project, feature, fix, refactor or explore. For a chore, say no sync is needed and stop.
-- Build the design tree yourself from the request: the main decisions, most important first. Start with the problem and users. When AI behaviour is involved, include guardrails and evals.
-- Show the type (add "?" if unsure) and the top branches, each marked open or already answered. Wait for me to confirm, reorder or skip.
+If I stated an approach, start from it: say what holds, then challenge the weak points. Do not replace it with yours.
+If I gave no approach, propose a plan, then ask around it.
 
-## 3. Ask in rounds
+## 3. Design tree
 
-- The frontier is every open question whose prerequisites are settled. Ask 2 to 3 per round, most important first: what blocks other decisions or is costly to get wrong.
-- Business before technical.
-- Each question has your recommended answer and a short reason. Word it so "yes" accepts it.
-- Plain numbered list. No bold labels, no arrows, no emoji:
+The choices to make before building, grouped by topic.
+- Leaf: one choice only I can make, with its options. Facts are found, not asked.
+- Branch: a topic built from the request.
+- Status: open, answered, assumed (I can override), later. Write "after <ID>" when a leaf depends on another.
+- Each round asks every open choice that can be decided now (nothing it depends on is still open), most important first.
+- At the start, show the branches so I can check every topic is covered.
+
+## 4. First message
+
+- Type: project, feature, fix, refactor or explore. For a chore, say no sync is needed and stop. Add "?" if unsure.
+- The branches of the design tree. Start with the problem and users. When AI behaviour is involved, include guardrails and evals.
+- Then the first round of questions.
+
+## 5. Questions
+
+- Ask only real choices. Anything with one obvious answer goes in one line: "Assumed: <ID> ...".
+- Most important first: a choice that blocks other choices, or is costly to get wrong.
+- Questions only someone else can answer are marked "(ask <who>)".
+- Each question uses its leaf ID: one short line with all the information needed to answer, then 2 or 3 options of one line each with their trade-off, then your recommendation and why. The recommendation can be any option, and "do nothing" can be an option. No yes/no questions unless the choice really is binary. No bold, arrows or emoji. Format:
 
 ```
-1. Who reads the result: support agents or customers?
-   Recommended: support agents, the brief says they sort the emails.
+<Branch>
+<ID> <Question>?
+   A. <Option> (<trade-off>)
+   B. <Option> (<trade-off>)
+   Recommended: <letter>, <why>.
 ```
 
-- I can reply "yes" to accept all, or answer by number.
+- How I answer: "ok all" accepts every recommendation of this round; "2.1 ok" accepts one; "2.1B" picks another option; the same form overrides an assumed choice. I can mix them. Any question I don't mention takes your recommendation.
 
-## 4. Suggestions
+## 6. Keywords
 
-When a branch is done, add "Suggestions:" (max 2) if you see a better option or a risk nobody raised. They are proposals only and count only if I accept them.
-
-## Keywords
-
-- "next": leave this branch. Its open questions become open points.
+- "next": leave this branch. Its open choices become open points.
 - "enough": stop asking.
 
-## 5. End
+## 7. End
 
-When the tree is done, or on "enough", list the type and the open points. Then say: "Run /spec to write it."
+When every choice is settled, or on "enough", list the type, the decisions in one line each, and the open points. Then say: "Run /spec to write it."
