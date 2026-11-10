@@ -1,5 +1,8 @@
 ---
-description: Commit (as multiple logical commits), push to a feature branch, open or update a PR to staging, then sync the base branch once it's merged
+name: ship
+description: Commit (as multiple logical commits), push to a feature branch, open or update a PR to staging, then sync the base branch once it's merged. Use only when the user asks to ship by name.
+argument-hint: [branch name]
+disable-model-invocation: true
 allowed-tools: Bash(git:*), Bash(gh:*), Read, Grep, Glob, AskUserQuestion
 ---
 
